@@ -1,5 +1,5 @@
 # Prestige PC Cleanup
-PRESTIGE TECH — by Dominik Wasilak — v0.1.0
+PRESTIGE TECH — by Dominik Wasilak — v0.2.0
 
 Skanowanie, podgląd i odwracalne czyszczenie starych plików TEMP; pliki osobiste tylko do przeglądu.
 
