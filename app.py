@@ -5,7 +5,7 @@ import sys
 import tempfile
 import time
 import uuid
-from runtime import atomic_json,digest,entry,files,inside,parser,read_json
+from runtime import atomic_json,digest,entry,files,inside,parser,powershell,read_json
 
 def temp_roots():
     roots=[Path(tempfile.gettempdir()).resolve()]
@@ -21,7 +21,17 @@ def profiles():
         result['directx-cache']=str(Path(os.environ['LOCALAPPDATA'])/'D3DSCache')
         result['thumbnails']=str(Path(os.environ['LOCALAPPDATA'])/'Microsoft/Windows/Explorer')
     result['downloads']=str(Path.home()/'Downloads')
+    if os.name=='nt':result['recycle-bin']='Kosz bieżącego użytkownika — analiza'
     return result
+
+def scan_recycle():
+    if os.name!='nt':raise ValueError('Odczyt kosza wymaga Windows.')
+    rows=powershell(r'''$shell=New-Object -ComObject Shell.Application;$bin=$shell.NameSpace(10)
+if($null -eq $bin){throw 'Kosz niedostępny.'}
+$rows=@(foreach($item in $bin.Items()){[pscustomobject]@{name=[string]$item.Name;size=[long]$item.Size;is_folder=[bool]$item.IsFolder;deleted=[string]$item.ExtendedProperty('System.Recycle.DateDeleted')}})
+ConvertTo-Json -InputObject $rows -Depth 4''')
+    return {'schema_version':1,'kind':'recycle-bin','analysis_only':True,'items':rows or [],
+        'clean_allowed':False,'note':'Analiza kosza. Trwałe opróżnianie wymaga osobnego planu i jawnej zgody w Windows Toolkit; brak rollbacku.'}
 
 def can_clean(root,relative):
     root=Path(root).resolve()
@@ -88,7 +98,7 @@ def restore(directory):
 def build():
     p=parser('SCAN → PREVIEW → CLEAN. CLEAN oznacza kwarantannę z możliwością rollbacku.')
     p.add_argument('command',nargs='?',choices=['scan','preview','clean','restore','profiles'])
-    p.add_argument('--profile',choices=['temp','windows-temp','directx-cache','thumbnails','windows-logs','downloads'])
+    p.add_argument('--profile',choices=['temp','windows-temp','directx-cache','thumbnails','windows-logs','downloads','recycle-bin'])
     p.add_argument('--root',default=tempfile.gettempdir());p.add_argument('--days',type=int,default=7)
     p.add_argument('--plan');p.add_argument('--quarantine');p.add_argument('--apply',action='store_true')
     return p
@@ -96,6 +106,12 @@ def build():
 def handle(a):
     if a.command=='profiles':return profiles()
     if a.command=='scan':
+        if a.profile=='recycle-bin':
+            data=scan_recycle()
+            if a.plan:
+                if Path(a.plan).exists():raise FileExistsError(a.plan)
+                atomic_json(a.plan,data)
+            return data
         if a.profile:
             if a.profile not in profiles():raise ValueError('Profil niedostępny w tym systemie.')
             a.root=profiles()[a.profile]
@@ -112,6 +128,7 @@ def handle(a):
         if not a.plan:raise ValueError('Podaj --plan.')
         data=read_json(a.plan)
         if a.command=='preview' or not a.apply:return data
+        if data.get('analysis_only'):raise ValueError('Ten plan służy wyłącznie do analizy; nie pozwala na CLEAN.')
         if not a.quarantine:raise ValueError('Podaj nowy katalog --quarantine.')
         return clean(data,a.quarantine)
     if a.command=='restore':

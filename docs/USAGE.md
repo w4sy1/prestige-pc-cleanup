@@ -20,4 +20,4 @@ obejmuje wyłącznie thumbcache_*.db, nie cały katalog Explorer. Pliki zablokow
 mogą nie zostać przeniesione; manifest zachowuje dane odtwarzania.
 `scan --profile windows-logs` i `scan --profile downloads` służą do analizy. Raport oznacza
 logi, pliki >=100 MiB i potencjalne instalatory; wiek nie dowodzi zbędności pliku.
-CLEAN odmówi zmiany tych katalogów. Kosz obsługuje obecnie osobny Windows Toolkit.
+CLEAN odmówi zmiany tych katalogów. `scan --profile recycle-bin` analizuje kosz bez zmian. Trwałe opróżnianie obsługuje osobny Windows Toolkit.
