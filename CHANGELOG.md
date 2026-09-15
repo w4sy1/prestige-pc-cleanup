@@ -15,3 +15,8 @@ Profile cache/miniatur, analiza logów i Downloads oraz kontrola kolizji przed r
 - GUI, PDF i samodzielny build EXE.
 - Ograniczony bufor wyników, poprawiona obsługa UTF-8 i zatrzymywania backendu.
 - Konfiguracja testów CI; zależności zachowują oryginalne licencje.
+
+## 0.3.3
+
+- Odmowa przy brakujących plikach kwarantanny; wyłączne tworzenie pliku docelowego bez nadpisywania.
+- Testy błędów i zachowania danych.

@@ -82,18 +82,33 @@ def clean(plan,destination):
 
 def restore(directory):
     directory=Path(directory).resolve();data=read_json(directory/'manifest.json');root=Path(data['root']).resolve()
+    if data.get('schema_version')!=1 or not isinstance(data.get('files'),list):raise ValueError('Nieprawidłowy manifest kwarantanny.')
+    seen_paths=set();seen_stored=set()
+    for row in data['files']:
+        if not isinstance(row,dict):raise ValueError('Nieprawidłowy wpis kwarantanny.')
+        target=str(inside(root,row['path'])).casefold();stored=str(inside(directory,row['stored'])).casefold()
+        if target in seen_paths or stored in seen_stored:raise ValueError('Powtórzony wpis kwarantanny.')
+        seen_paths.add(target);seen_stored.add(stored)
     if any(not can_clean(root,row['path']) for row in data['files']):raise ValueError('Nieprawidłowy root lub plik.')
     # Kolizje sprawdzamy przed pierwszym odtworzeniem.
     for row in data['files']:
         source=inside(directory,row['stored']);target=inside(root,row['path'])
         if source.exists() and (target.exists() or digest(source)!=row['sha256']):raise ValueError('Kolizja lub zmieniony plik kwarantanny.')
+        if not source.exists() and (not target.is_file() or digest(target)!=row['sha256']):raise ValueError('Brakuje pliku kwarantanny i poprawnej odtworzonej kopii.')
     restored=0
+    already_restored=0
     for row in data['files']:
         source=inside(directory,row['stored']);target=inside(root,row['path'])
-        if not source.exists():continue
+        if not source.exists():
+            if not target.is_file() or digest(target)!=row['sha256']:raise ValueError('Brakuje poprawnej odtworzonej kopii.')
+            already_restored+=1;continue
         if target.exists() or digest(source)!=row['sha256']:raise ValueError('Kolizja lub zmieniony plik kwarantanny.')
-        target.parent.mkdir(parents=True,exist_ok=True);shutil.move(str(source),str(target));restored+=1
-    return {'restored':restored}
+        target.parent.mkdir(parents=True,exist_ok=True)
+        with source.open('rb') as incoming,target.open('xb') as outgoing:
+            shutil.copyfileobj(incoming,outgoing)
+        if digest(target)!=row['sha256'] or digest(source)!=row['sha256']:raise ValueError('Plik zmienił się podczas odtwarzania; zachowano kwarantannę.')
+        shutil.copystat(source,target);source.unlink();restored+=1
+    return {'restored':restored,'already_restored':already_restored,'ok':True}
 
 def build():
     p=parser('SCAN → PREVIEW → CLEAN. CLEAN oznacza kwarantannę z możliwością rollbacku.')

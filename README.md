@@ -1,5 +1,5 @@
 # Prestige PC Cleanup
-PRESTIGE TECH — by Dominik Wasilak — v0.3.1
+PRESTIGE TECH — by Dominik Wasilak — v0.3.3
 
 Skanowanie, podgląd i odwracalne czyszczenie starych plików TEMP; pliki osobiste tylko do przeglądu.
 
@@ -39,3 +39,9 @@ biblioteki Python są dołączone. Zewnętrzne backendy systemowe pozostają wym
 Budowa: [docs/BUILD.md](docs/BUILD.md). Obsługa: [docs/GUI.md](docs/GUI.md).
 Ograniczenia bufora i testów: [docs/DESKTOP-STATUS.md](docs/DESKTOP-STATUS.md).
 Własny kod ma licencję MIT. Licencje zależności: THIRD_PARTY_NOTICES.txt.
+
+## Poprawki rollbacku 0.3.3
+
+Odmowa przy brakujących plikach kwarantanny; wyłączne tworzenie pliku docelowego bez nadpisywania.
+
+Szczegóły: [docs/ROLLBACK.md](docs/ROLLBACK.md).
