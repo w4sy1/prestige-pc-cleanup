@@ -47,7 +47,9 @@ class RestoreFailureTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             source,q=self.prepare(Path(temporary))
             with patch('app.temp_roots',return_value=[source.resolve()]):
-                clean(scan(source),q);original_open=Path.open;target=source/'a'
+                # Windows runners may expose TEMP through an 8.3 alias, while
+                # restore uses the canonical root stored in the manifest.
+                clean(scan(source),q);original_open=Path.open;target=source.resolve()/'a'
                 def racing_open(path,mode='r',*args,**kwargs):
                     if path==target and mode=='xb':
                         with original_open(path,'wb') as stream:stream.write(b'new user file')
